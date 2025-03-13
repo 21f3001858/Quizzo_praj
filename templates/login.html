@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+
+{% block title %}Login - Quizzo{% endblock %}
+
+{% block content %}
+<!-- Centered login container with soft background -->
+<div class="login-container d-flex justify-content-center align-items-center min-vh-100" style="background-color: #f4f6f9;">
+    <div class="login-box bg-white p-4 shadow rounded" style="width: 350px;">
+        <h2 class="text-center mb-3 text-dark">Login</h2>
+
+        <form method="POST" action="{{ url_for('login') }}">
+            <!-- Username Field -->
+            <div class="mb-3">
+                <label for="username" class="form-label text-secondary">Username</label>
+                <input type="text" id="username" name="username" class="form-control" placeholder="Albert Einstein" required>
+            </div>
+
+            <!-- Password Field -->
+            <div class="mb-3">
+                <label for="password" class="form-label text-secondary">Password</label>
+                <input type="password" id="password" name="password" class="form-control" placeholder="Keep it as strong as gravity" required>
+            </div>
+
+            <!-- Submit Button (Now Black) -->
+            <button type="submit" class="btn btn-dark w-100">Login</button>
+        </form>
+
+        <!-- Register Link (Now Black) -->
+        <div class="text-center mt-3">
+            <small class="text-muted">Don't have an account?</small>
+            <a href="{{ url_for('register') }}" class="text-dark text-decoration-none fw-bold">Register</a>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

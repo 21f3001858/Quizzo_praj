@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+
+{% block title %}{{ quiz.name }}{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="card shadow-lg border-0 rounded-4">
+        <div class="card-header text-white text-center py-4" style="background: linear-gradient(90deg,rgb(70, 18, 227),rgb(66, 235, 63));">
+            <h2 class="fw-bold mb-0">{{ quiz.chapter.name }}</h2>
+        </div>
+        <div class="card-body p-4">
+            
+            <!-- Quiz Instructions -->
+            <div class="alert alert-info" role="alert">
+                <h5 class="fw-bold">Quiz Instructions:</h5>
+                <ul class="mb-0">
+                    <li>Read each question carefully before selecting an answer.</li>
+                    <li>Only one option can be selected per question.</li>
+                    <li>Your progress will be updated as you answer.</li>
+                    <li>All questions are <strong>compulsory.</strong></li>
+                    <li>Click <strong>"Submit Quiz"</strong> once you’ve answered all questions.</li>
+                </ul>
+            </div>
+
+            <!-- Progress Bar -->
+            <div class="progress mb-4" style="height: 20px; background-color: #e9ecef; border-radius: 10px; overflow: hidden;">
+                <div id="quizProgress" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" 
+                     style="width: 0%; background: linear-gradient(90deg, #28a745, #17a2b8); font-weight: bold;" 
+                     aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+                    0% Completed
+                </div>
+            </div>
+            
+
+            <form method="POST" action="{{ url_for('submit_quiz', quiz_id=quiz.id) }}" id="quizForm">
+                {% for question in questions %}
+                <div class="card mb-4 shadow-sm border-0">
+                    <div class="card-body">
+                        <h5 class="fw-semibold">{{ loop.index }}. {{ question.question_text }}</h5>
+                        <div class="list-group">
+                            <div class="form-check">
+                                <input class="form-check-input quiz-option" type="radio" name="q{{ question.id }}" value="1" required>
+                                <label class="form-check-label">{{ question.option_1 }}</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input quiz-option" type="radio" name="q{{ question.id }}" value="2" required>
+                                <label class="form-check-label">{{ question.option_2 }}</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input quiz-option" type="radio" name="q{{ question.id }}" value="3" required>
+                                <label class="form-check-label">{{ question.option_3 }}</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input quiz-option" type="radio" name="q{{ question.id }}" value="4" required>
+                                <label class="form-check-label">{{ question.option_4 }}</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+
+                <div class="text-center mt-4">
+                    <button type="submit" class="btn btn-lg btn-success px-5 py-2 rounded-pill shadow-sm">
+                        Submit Quiz
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- JavaScript for Progress Bar -->
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const totalQuestions = document.querySelectorAll(".quiz-option").length / 4;
+    const progressBar = document.getElementById("quizProgress");
+    const quizOptions = document.querySelectorAll(".quiz-option");
+    
+    function updateProgress() {
+        const answeredQuestions = new Set();
+        quizOptions.forEach(option => {
+            if (option.checked) {
+                answeredQuestions.add(option.name);
+            }
+        });
+        const progress = (answeredQuestions.size / totalQuestions) * 100;
+        progressBar.style.width = progress + "%";
+        progressBar.innerText = Math.round(progress) + "% Completed";
+    }
+    
+    quizOptions.forEach(option => {
+        option.addEventListener("change", updateProgress);
+    });
+});
+</script>
+
+{% endblock %}

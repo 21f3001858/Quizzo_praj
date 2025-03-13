@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block title %} Register {% endblock %}
+
+{% block content %}
+<div class="container d-flex justify-content-center align-items-center vh-100">
+    <div class="card shadow-lg p-4" style="width: 500px; border-radius: 10px;"> <!-- Increased width -->
+        <h2 class="text-center text-dark">Quizzo</h2> <!-- Changed "Quizzo" to black -->
+        <p class="text-center text-muted">Create your account</p>
+        <form action="{{ url_for('register') }}" method="POST">
+            
+            <div class="mb-3">
+                <label for="username" class="form-label">Username</label>
+                <input type="text" name="username" class="form-control" placeholder="Choose your digital alter ego" required>
+            </div>
+            
+            <div class="mb-3">
+                <label for="name" class="form-label">Full Name</label>
+                <input type="text" name="name" class="form-control" placeholder="Your legendary name goes here" required>
+            </div>
+            
+            <div class="mb-3">
+                <label for="email" class="form-label">Email</label>
+                <input type="email" name="email" class="form-control" placeholder="We swear we won’t spam! 📩" required>
+            </div>
+            
+            <div class="mb-3">
+                <label for="password" class="form-label">Password</label>
+                <input type="password" name="password" class="form-control" placeholder="Make it stronger than your morning coffee ☕" required>
+            </div>
+            
+            <div class="mb-3">
+                <label for="confirm_password" class="form-label">Confirm Password</label>
+                <input type="password" name="confirm_password" class="form-control" placeholder="Type it again… just to be sure! 🔄" required>
+            </div>
+            
+            <button type="submit" class="btn btn-dark w-100">Register</button> <!-- Changed button color to black -->
+        </form>
+        
+        <p class="text-center mt-3">
+            Already have an account? <a href="{{ url_for('login') }}" class="text-decoration-none fw-bold text-dark">Login</a> <!-- Changed "Login" to bold black -->
+        </p>
+    </div>
+</div>
+{% endblock %}

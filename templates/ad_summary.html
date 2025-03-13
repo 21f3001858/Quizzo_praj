@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Summary{% endblock %}
+
+{% block content %}
+{% include "ad_nav.html" %}
+
+<div class="container mt-4">
+    <h1 class="mb-4 fw-bold text-center"><i class="bi bi-bar-chart"></i> Admin Summary</h1>
+
+    <!-- Search Form -->
+    <div class="card shadow-sm p-3 mb-4">
+        <form method="get" class="row g-2">
+            <div class="col-md-9 col-8">
+                <input type="text" name="search" class="form-control" placeholder="🔍 Search users..." value="{{ search_query }}">
+            </div>
+            <div class="col-md-3 col-4">
+                <button class="btn btn-primary w-100" type="submit"><i class="bi bi-search"></i> Search</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- User Summary Table -->
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <h5 class="fw-bold mb-3"><i class="bi bi-people"></i> User Performance Summary</h5>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Total Attempts</th>
+                            <th>Average Score</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for user in users %}
+                        <tr>
+                            <td class="fw-bold">{{ user.name }}</td>
+                            <td>{{ user.email }}</td>
+                            <td>{{ user.total_attempts }}</td>
+                            <td>{{ "%.2f"|format(user.avg_score) }}</td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="4" class="text-center text-muted">No users found.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Performance Chart -->
+    <div class="card p-4 mt-4 shadow-sm">
+        <h3 class="text-center fw-bold"><i class="bi bi-graph-up"></i> User Performance Chart</h3>
+        <canvas id="userPerformanceChart"></canvas>
+    </div>
+</div>
+
+<!-- Chart.js Script -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        var ctx = document.getElementById('userPerformanceChart').getContext('2d');
+        var gradient = ctx.createLinearGradient(0, 0, 0, 400);
+        gradient.addColorStop(0, 'rgba(54, 162, 235, 0.8)');
+        gradient.addColorStop(1, 'rgba(54, 162, 235, 0.2)');
+
+        var chart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: {{ users | map(attribute="name") | list | tojson }},
+                datasets: [{
+                    label: 'Average Score',
+                    data: {{ users | map(attribute="avg_score") | list | tojson }},
+                    backgroundColor: gradient,
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    borderWidth: 2,
+                    borderRadius: 6, 
+                    hoverBackgroundColor: 'rgba(54, 162, 235, 1)',
+                    hoverBorderColor: 'rgba(54, 162, 235, 1)',
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top',
+                        labels: {
+                            font: { size: 14, weight: 'bold' },
+                            color: '#333'
+                        }
+                    },
+                    
+                },
+                scales: {
+                    x: {
+                        ticks: { font: { size: 12 }, color: '#333' },
+                        grid: { display: false }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        ticks: { font: { size: 12 }, color: '#333' },
+                        grid: { color: 'rgba(200, 200, 200, 0.3)' }
+                    }
+                }
+            }
+        });
+    });
+</script>
+
+
+{% endblock %}

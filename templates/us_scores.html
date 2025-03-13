@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+{% block title %}Quiz Scores{% endblock %}
+
+{% block content %}
+{% include "user_nav.html" %}
+
+<div class="container mt-4">
+    <h2 class="text-center text-success">Your Quiz Attempts</h2>
+
+    <div class="card mt-3">
+        <div class="card-body">
+            {% if quiz_attempts %}
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Quiz</th>
+                            <th>Score</th>
+                            <th>Date Attempted</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for attempt in quiz_attempts %}
+                        <tr>
+                            <td>{{ attempt.quiz.chapter.name }}</td>
+                            <td>{{ attempt.score }}</td>
+                            <td>{{ attempt.attempt_date.strftime('%Y-%m-%d %H:%M') }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="text-muted">You haven’t attempted any quizzes yet.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="mt-3">
+        <a href="{{ url_for('ud') }}" class="btn btn-secondary">Back to Dashboard</a>
+    </div>
+</div>
+{% endblock %}

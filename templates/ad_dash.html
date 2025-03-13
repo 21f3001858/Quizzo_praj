@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+{% block title %} Admin Dashboard {% endblock %}
+
+{% block content %}
+{% include "ad_nav.html" %}
+
+<div class="container mt-4">
+    <h2 class="text-center text-primary">Admin Dashboard</h2>
+
+    <div class="row">
+        <div class="col-md-4">
+            <div class="card text-white bg-primary mb-3">
+                <div class="card-body">
+                    <h5 class="card-title">Total Users</h5>
+                    <p class="card-text display-5">{{ total_users }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-white bg-success mb-3">
+                <div class="card-body">
+                    <h5 class="card-title">Total Subjects</h5>
+                    <p class="card-text display-5">{{ total_subjects }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-white bg-warning mb-3">
+                <div class="card-body">
+                    <h5 class="card-title">Total Quizzes</h5>
+                    <p class="card-text display-5">{{ total_quizzes }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="text-center mt-3">
+        <a href="{{ url_for('manage_users') }}" class="btn btn-outline-primary">Manage Users</a>
+        <a href="{{ url_for('manage_subjects') }}" class="btn btn-outline-success">Manage Subjects</a>
+        <a href="{{ url_for('manage_quizzes') }}" class="btn btn-outline-warning">Manage Quizzes</a>
+    </div>
+</div>
+{% endblock %}

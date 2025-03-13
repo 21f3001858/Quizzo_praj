@@ -1,0 +1,157 @@
+{% extends "base.html" %}
+
+{% block content %}
+{% include "ad_nav.html" %}
+
+<h2 class="text-center my-3">📚 Manage Quizzes</h2>
+
+<!-- Add Quiz Button (Triggers Modal) -->
+<button class="btn btn-success mb-3 px-4 py-2 fw-bold d-flex align-items-center gap-2" 
+        data-bs-toggle="modal" data-bs-target="#addQuizModal">
+    + Add Quiz
+</button>
+
+<!-- Search Bar -->
+<div class="card shadow">
+    <div class="card-body">
+        <h5 class="card-title d-flex justify-content-between align-items-center">
+            Existing Quizzes
+
+            <form method="GET" action="{{ url_for('manage_quizzes') }}" class="d-flex">
+                <input type="text" class="form-control me-2" name="search" placeholder="Search by Chapter name..." value="{{ search_query }}">
+                <button class="btn btn-primary" type="submit">Search</button>
+            </form>
+        </h5>
+
+        <table class="table table-striped table-bordered table-hover">
+            <thead class="table-dark">
+                <tr>
+                    <th>ID</th>
+                    <th>Chapter</th>
+                    <th>Date</th>
+                    <th>Duration (min)</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for quiz in quizzes %}
+                <tr>
+                    <td>{{ quiz.id }}</td>
+                    <td>{{ quiz.chapter.name }}</td>
+                    <td>{{ quiz.date.strftime('%Y-%m-%d') }}</td>
+                    <td>{{ quiz.duration }}</td>
+                    <td>
+                        <div class="d-flex gap-2">
+                            <!-- Add Question Button (Triggers Modal) -->
+                            <button class="btn btn-info btn-sm" data-bs-toggle="modal" data-bs-target="#addQuestionModal{{ quiz.id }}">
+                                Add Question
+                            </button>
+
+                            <!-- Delete Form -->
+                            <form method="POST" action="{{ url_for('delete_quiz', id=quiz.id) }}" class="d-inline">
+                                <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+
+                <!-- Add Question Modal -->
+                <div class="modal fade" id="addQuestionModal{{ quiz.id }}" tabindex="-1" aria-labelledby="addQuestionModalLabel" aria-hidden="true">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">Add Question to {{ quiz.chapter.name }}</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <form method="POST" action="{{ url_for('add_question', quiz_id=quiz.id) }}">
+                                <div class="modal-body">
+                                    <div class="mb-3">
+                                        <label class="form-label">Question Text</label>
+                                        <textarea class="form-control" name="question_text" rows="3" required></textarea>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Option 1</label>
+                                        <input type="text" class="form-control" name="option_1" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Option 2</label>
+                                        <input type="text" class="form-control" name="option_2" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Option 3</label>
+                                        <input type="text" class="form-control" name="option_3" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Option 4</label>
+                                        <input type="text" class="form-control" name="option_4" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Correct Option (1-4)</label>
+                                        <input type="number" class="form-control" name="correct_option" min="1" max="4" required>
+                                    </div>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="submit" class="btn btn-success">Add Question</button>
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                </div>
+                               
+                                
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                {% else %}
+                <tr>
+                    <td colspan="5" class="text-center">No quizzes found.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Add Quiz Modal -->
+<div class="modal fade" id="addQuizModal" tabindex="-1" aria-labelledby="addQuizModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add New Quiz</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST" action="{{ url_for('manage_quizzes') }}">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="chapter_id" class="form-label">Select Chapter</label>
+                        <select class="form-select" id="chapter_id" name="chapter_id" required>
+                            <option value="" disabled selected>Select a chapter</option>
+                            {% for chapter in chapters %}
+                            <option value="{{ chapter.id }}">{{ chapter.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="date" class="form-label">Quiz Date</label>
+                        <input type="date" class="form-control" id="date" name="date" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="duration" class="form-label">Duration (minutes)</label>
+                        <input type="number" class="form-control" id="duration" name="duration" min="1" required>
+                    </div>
+                </div>
+
+                
+
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-success">Add Quiz</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                </div>
+
+            </form>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

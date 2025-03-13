@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+
+{% block content %}
+{%include "user_nav.html"%}
+<div class="container mt-4">
+    <h2 class="text-center">Summary - {{ user.username}}</h2>
+
+    <!-- Summary Cards -->
+    <div class="row justify-content-center mt-4">
+        <div class="col-md-3 col-sm-6">
+            <div class="card text-center p-3 shadow-sm">
+                <h6>Total Quizzes Attempted</h6>
+                <h3 class="text-primary">{{ total_quizzes }}</h3>
+
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <div class="card text-center p-3 shadow-sm">
+                <h6>Best Score</h6>
+                <h3 class="text-success">{{ best_score }}</h3>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <div class="card text-center p-3 shadow-sm">
+                <h6>Lowest Score</h6>
+                <h3 class="text-danger">{{ lowest_score }}</h3>
+            </div>
+        </div>
+    </div>
+
+    <!-- Most Attempted Chapter -->
+    <div class="text-center mt-4">
+        <h5>Most Attempted Chapter: <span class="text-warning fw-bold">{{ most_attempted_chapter }}</span></h5>
+    </div>
+
+    <!-- Quiz Performance Graph -->
+    <div class="row justify-content-center mt-3">
+        <div class="col-lg-6 col-md-8 col-sm-12">
+            <div class="card p-3 shadow-sm">
+                <h5 class="text-center">Quiz Performance</h5>
+                <div style="height: 300px;">
+                    <canvas id="quizPerformanceChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Chart Script -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        var ctx = document.getElementById('quizPerformanceChart').getContext('2d');
+
+        // Remove duplicate quiz names and keep highest scores
+        var quizData = {};
+        var quizNames = {{ quiz_names | tojson | safe }};
+        var quizScores = {{ quiz_scores | tojson | safe }};
+
+
+        for (var i = 0; i < quizNames.length; i++) {
+            if (!quizData[quizNames[i]] || quizScores[i] > quizData[quizNames[i]]) {
+                quizData[quizNames[i]] = quizScores[i];
+            }
+        }
+
+        var uniqueQuizNames = Object.keys(quizData);
+        var uniqueQuizScores = Object.values(quizData);
+
+        var quizPerformanceChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: uniqueQuizNames,
+                datasets: [{
+                    label: 'Quiz Scores',
+                    data: uniqueQuizScores,
+                    backgroundColor: 'rgba(54, 162, 235, 0.6)',
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        ticks: { autoSkip: false, maxRotation: 30, minRotation: 0 }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        max: 100
+                    }
+                },
+                plugins: {
+                    legend: { display: false }
+                },
+                barPercentage: 0.5,
+                categoryPercentage: 0.6
+            }
+        });
+    });
+</script>
+
+{% endblock %}
