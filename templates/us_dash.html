@@ -2,9 +2,12 @@
 
 {% block title %}User Dashboard{% endblock %}
 
-{% block content %}
+{% block navbar %}
 {% include "user_nav.html" %}
+{% endblock %}
 
+
+{% block content %}
 <div class="container mt-4">
     <div class="text-center">
         <h2 class="fw-bold">Welcome, {{ user.full_name }}!</h2>

@@ -1,8 +1,12 @@
 {% extends "base.html" %}
 
-{% block content %}
-{% include "ad_nav.html" %}
+{% block title %} Manage Quizzes {% endblock %}
 
+{% block navbar %}
+{% include "ad_nav.html" %}
+{% endblock %}
+
+{% block content %}
 <h2 class="text-center my-3">📚 Manage Quizzes</h2>
 
 <!-- Add Quiz Button (Triggers Modal) -->
@@ -46,6 +50,10 @@
                             <button class="btn btn-info btn-sm" data-bs-toggle="modal" data-bs-target="#addQuestionModal{{ quiz.id }}">
                                 Add Question
                             </button>
+
+                            <a href="{{ url_for('manage_questions', quiz_id=quiz.id) }}" class="btn btn-primary btn-sm">
+                                View
+                            </a>
 
                             <!-- Delete Form -->
                             <form method="POST" action="{{ url_for('delete_quiz', id=quiz.id) }}" class="d-inline">

@@ -1,18 +1,20 @@
 {% extends "base.html" %}
 
-{% block content %}
+{% block title %} Manage Chapters {% endblock %}
+
+{% block navbar %}
 {% include "ad_nav.html" %}
+{% endblock %}
+
+{% block content %}
+
 <h2 class="text-center my-3">📖Manage Chapters</h2>
-
-
-
 
 <!-- Add Chapter Button (Triggers Modal) -->
 <button class="btn btn-success mb-3 px-4 py-2 fw-bold d-flex align-items-center gap-2" 
         data-bs-toggle="modal" data-bs-target="#addChapterModal">
     + Add Chapter
 </button>
-
 
 <!-- Existing Chapters Table -->
 <div class="card shadow">
@@ -27,7 +29,6 @@
         </h5>
 
         <table class="table table-striped table-bordered table-hover">
-
             <thead class="table-dark">
                 <tr>
                     <th>ID</th>
@@ -52,14 +53,15 @@
                         </button>
 
                         <!-- Delete Form -->
-                        <form method="POST" action="{{ url_for('delete_chapter', id=chapter.id) }}" class="d-inline">
-                            <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                        <form action="{{ url_for('delete_chapter', chapter_id=chapter.id) }}" method="POST" style="display:inline;">
+                            <button type="submit" class="btn btn-danger">Delete</button>
                         </form>
+                        
                     </div>
                     </td>
                 </tr>
 
-                <!-- Edit Chapter Modal (Already Exists) -->
+                <!-- Edit Chapter Modal -->
                 <div class="modal fade" id="editModal{{ chapter.id }}" tabindex="-1" aria-labelledby="editModalLabel" aria-hidden="true">
                     <div class="modal-dialog">
                         <div class="modal-content">
@@ -98,7 +100,7 @@
                 </div>
                 {% else %}
                 <tr>
-                    <td colspan="4" class="text-center">No chapters found.</td>
+                    <td colspan="5" class="text-center">No chapters found.</td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -120,7 +122,6 @@
                         <label for="name" class="form-label">Chapter Name</label>
                         <input type="text" class="form-control" id="name" name="name" required>
                     </div>
-
                     <div class="mb-3">
                         <label for="subject_id" class="form-label">Select Subject</label>
                         <select class="form-select" id="subject_id" name="subject_id" required>
@@ -130,7 +131,6 @@
                             {% endfor %}
                         </select>
                     </div>
-
                     <div class="mb-3">
                         <label for="description" class="form-label">Description</label>
                         <textarea class="form-control" id="description" name="description" rows="3"></textarea>

@@ -1,7 +1,13 @@
 {% extends "base.html" %}
 
+{% block title %}User Summary{% endblock %}
+
+{% block navbar %}
+{% include "user_nav.html" %}
+{% endblock %}
+
 {% block content %}
-{%include "user_nav.html"%}
+
 <div class="container mt-4">
     <h2 class="text-center">Summary - {{ user.username}}</h2>
 
@@ -11,19 +17,12 @@
             <div class="card text-center p-3 shadow-sm">
                 <h6>Total Quizzes Attempted</h6>
                 <h3 class="text-primary">{{ total_quizzes }}</h3>
-
             </div>
         </div>
         <div class="col-md-3 col-sm-6">
             <div class="card text-center p-3 shadow-sm">
                 <h6>Best Score</h6>
                 <h3 class="text-success">{{ best_score }}</h3>
-            </div>
-        </div>
-        <div class="col-md-3 col-sm-6">
-            <div class="card text-center p-3 shadow-sm">
-                <h6>Lowest Score</h6>
-                <h3 class="text-danger">{{ lowest_score }}</h3>
             </div>
         </div>
     </div>
@@ -52,17 +51,16 @@
     document.addEventListener("DOMContentLoaded", function () {
         var ctx = document.getElementById('quizPerformanceChart').getContext('2d');
 
-        // Remove duplicate quiz names and keep highest scores
-        var quizData = {};
+        // Ensure proper unique quiz names and highest scores
         var quizNames = {{ quiz_names | tojson | safe }};
         var quizScores = {{ quiz_scores | tojson | safe }};
 
-
-        for (var i = 0; i < quizNames.length; i++) {
-            if (!quizData[quizNames[i]] || quizScores[i] > quizData[quizNames[i]]) {
-                quizData[quizNames[i]] = quizScores[i];
+        var quizData = {};
+        quizNames.forEach((quiz, index) => {
+            if (!(quiz in quizData) || quizScores[index] > quizData[quiz]) {
+                quizData[quiz] = quizScores[index];
             }
-        }
+        });
 
         var uniqueQuizNames = Object.keys(quizData);
         var uniqueQuizScores = Object.values(quizData);

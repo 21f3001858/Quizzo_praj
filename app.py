@@ -2,7 +2,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
-from sqlalchemy import or_
+
 
 
 # Initialize Flask App
@@ -16,9 +16,6 @@ db = SQLAlchemy(app)
 
 #==========================================================================================================
 # Models
-
-
-
 # User Model
 class User(db.Model):
     __tablename__ = 'users'
@@ -28,12 +25,9 @@ class User(db.Model):
     full_name = db.Column(db.String(120), nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
     role = db.Column(db.String(20), nullable=False)  # "admin" or "user"
-
     scores = db.relationship('Score', back_populates='user')
-    
-
     # Performance tracking fields
-    total_attempts = db.Column(db.Integer, default=0)
+    total_attempts = db.Column(db.Integer, default=0) #How many quizzes have been attempted
     average_score = db.Column(db.Float, default=0.0)
 
 # Subject Model
@@ -57,7 +51,7 @@ class Chapter(db.Model):
     quizzes = db.relationship('Quiz', back_populates='chapter')
 
     # Track total attempts per chapter
-    total_attempts = db.Column(db.Integer, default=0)
+    total_attempts = db.Column(db.Integer, default=0)#helpful to display most attempting chapter 
 
 # Quiz Model
 class Quiz(db.Model):
@@ -101,18 +95,6 @@ class Score(db.Model):
     user = db.relationship('User', back_populates='scores')
     quiz = db.relationship('Quiz', back_populates='scores')
 
-# class QuizAttempt(db.Model):
-#     __tablename__ = 'quiz_attempts'
-#     id = db.Column(db.Integer, primary_key=True)
-#     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-#     quiz_id = db.Column(db.Integer, db.ForeignKey('quizzes.id'), nullable=False)
-#     score = db.Column(db.Integer, nullable=False)
-#     attempt_date = db.Column(db.DateTime, default=datetime.utcnow)
-
-#     user = db.relationship('User', back_populates='quiz_attempts')
-#     quiz = db.relationship('Quiz', back_populates='attempts')
-
-
 #==========================================================================================================
 # Initialization of Database and Default Data Setup
 with app.app_context():
@@ -151,9 +133,9 @@ def login():
             flash('Login successful!', 'success')
 
             if user.username == 'admin':
-                return redirect(url_for('ad'))  # Redirect to admin dashboard
+                return redirect(url_for('ad'))  #  admin dashboard
             else:
-                return redirect(url_for('ud'))  # Redirect to user dashboard
+                return redirect(url_for('ud'))  #  user dashboard
             
         else:
             flash('Invalid username or password', 'danger')
@@ -199,6 +181,7 @@ def register():
     
     return render_template('register.html')
 
+
 @app.route('/ad')
 def ad():
     if 'user_id' not in session:
@@ -222,13 +205,12 @@ def ad():
     )
 
 
-
- #✅ Function to check if user is admin
+ # check if user is admin
 def is_admin(user_id):
     user = User.query.get(user_id)
     return user and user.role == 'admin'
 
-# 🔹 Manage Users (with Search)
+#  Manage Users (with Search)
 @app.route('/admin/users')
 def manage_users():
     if 'user_id' not in session or not is_admin(session['user_id']):
@@ -253,60 +235,78 @@ def manage_users():
             quiz_attempts[attempt.user_id].append(attempt)
 
     return render_template('ad_users.html', users=users, search_query=search_query, quiz_attempts=quiz_attempts)
-
-
-
-
-
-
-
+ 
 @app.route('/admin/subjects', methods=['GET', 'POST'])
 def manage_subjects():
     if 'user_id' not in session or not is_admin(session['user_id']):
-        flash("Access Denied!", "danger")
         return redirect(url_for('login'))
 
-    search_query = request.args.get('search', '').strip()  # Get search input
+    search_query = request.args.get('search', '').strip()
 
-    if request.method == 'POST':  # Adding a new subject
-        name = request.form.get('name').strip()
-        description = request.form.get('description', '').strip()
-
-        if not name:
-            flash("Subject name is required!", "danger")
-        else:
-            new_subject = Subject(name=name, description=description)
-            db.session.add(new_subject)
-            db.session.commit()
-            flash("Subject added successfully!", "success")
-            return redirect(url_for('manage_subjects'))
-
-    # Filter subjects if search query exists
     if search_query:
         subjects = Subject.query.filter(Subject.name.ilike(f"%{search_query}%")).all()
     else:
         subjects = Subject.query.all()
 
+    if request.method == 'POST':
+        name = request.form.get('name').strip()
+        description = request.form.get('description', '').strip()
+
+        # Check if the subject already exists
+        existing_subject = Subject.query.filter_by(name=name).first()
+        if existing_subject:
+            flash(f"Subject '{name}' already exists!", "warning")
+        else:
+            new_subject = Subject(name=name, description=description)
+            db.session.add(new_subject)
+            db.session.commit()
+        
+
+        return redirect(url_for('manage_subjects'))  # Redirect after adding
+
     return render_template('ad_subject.html', subjects=subjects, search_query=search_query)
 
-# 🔹 Delete Subject
+
 @app.route('/admin/subjects/delete/<int:subject_id>', methods=['POST'])
 def delete_subject(subject_id):
-    if 'user_id' not in session or not is_admin(session['user_id']):
-        flash("Access Denied!", "danger")
-        return redirect(url_for('login'))
+    subject = Subject.query.get_or_404(subject_id)
 
-    subject = Subject.query.get(subject_id)
-    if subject:
-        db.session.delete(subject)
+    # Delete related questions
+    db.session.query(Question).filter(
+        Question.quiz_id.in_(
+            db.session.query(Quiz.id).filter(
+                Quiz.chapter_id.in_(
+                    db.session.query(Chapter.id).filter_by(subject_id=subject.id)
+                )
+            )
+        )
+    ).delete(synchronize_session=False)
+
+    # Delete related quizzes
+    db.session.query(Quiz).filter(
+        Quiz.chapter_id.in_(
+            db.session.query(Chapter.id).filter_by(subject_id=subject.id)
+        )
+    ).delete(synchronize_session=False)
+
+    # Delete related chapters
+    db.session.query(Chapter).filter_by(subject_id=subject.id).delete(synchronize_session=False)
+
+    # Delete the subject
+    db.session.delete(subject)
+
+    try:
         db.session.commit()
-        flash("Subject deleted successfully!", "success")
-    else:
-        flash("Subject not found!", "danger")
+        flash('Subject deleted successfully!', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error deleting subject: {str(e)}', 'danger')
 
     return redirect(url_for('manage_subjects'))
 
-# 🔹 Edit Subject
+
+
+# Edit Subject
 @app.route('/admin/subjects/edit/<int:subject_id>', methods=['POST'])
 def edit_subject(subject_id):
     if 'user_id' not in session or not is_admin(session['user_id']):
@@ -325,11 +325,10 @@ def edit_subject(subject_id):
     return redirect(url_for('manage_subjects'))
 
 
-# ✅ Manage Chapters (CRUD)
+# Manage Chapters (CRUD)
 @app.route('/admin/chapters', methods=['GET', 'POST'])
 def manage_chapters():
     if 'user_id' not in session or not is_admin(session['user_id']):
-        flash("Access Denied!", "danger")
         return redirect(url_for('login'))
 
     search_query = request.args.get('search', '').strip()  
@@ -337,13 +336,11 @@ def manage_chapters():
 
     if search_query:
         chapters = Chapter.query.filter(
-    or_(
-        Chapter.name.ilike(f"% {search_query} %"),  # Exact word match
-        Chapter.name.ilike(f"{search_query} %"),   # Starts with search term
-        Chapter.name.ilike(f"% {search_query}"),   # Ends with search term
-        Chapter.name.ilike(f"%{search_query}%")    # General substring match
-    )
-).all()  # Matches exact words
+            (Chapter.name.ilike(f"% {search_query} %")) |  # Exact word match
+            (Chapter.name.ilike(f"{search_query} %"))  |  # Starts with search term
+            (Chapter.name.ilike(f"% {search_query}"))  |  # Ends with search term
+            (Chapter.name.ilike(f"%{search_query}%"))     # General substring match
+        ).all()
     else:
         chapters = Chapter.query.all()
 
@@ -352,20 +349,46 @@ def manage_chapters():
         description = request.form.get('description')
         subject_id = request.form.get('subject_id')
 
-        if name and subject_id:
+        # Check if the chapter already exists for the same subject
+        existing_chapter = Chapter.query.filter_by(name=name, subject_id=subject_id).first()
+        if existing_chapter:
+            flash(f"Chapter '{name}' already exists in this subject!", "warning")
+        else:
             new_chapter = Chapter(name=name, description=description, subject_id=subject_id)
             db.session.add(new_chapter)
             db.session.commit()
-            flash("Chapter added successfully!", "success")
-        else:
-            flash("Please provide all required fields!", "danger")
-
+            
         return redirect(url_for('manage_chapters'))
 
     return render_template('ad_chapter.html', chapters=chapters, subjects=subjects, search_query=search_query)
 
+@app.route('/delete_chapter/<int:chapter_id>', methods=['POST'])
+def delete_chapter(chapter_id):
+    chapter = Chapter.query.get(chapter_id)
+    if chapter:
+        # Get all quizzes linked to the chapter
+        quizzes = Quiz.query.filter_by(chapter_id=chapter.id).all()
+        
+        # Delete all questions linked to each quiz
+        for quiz in quizzes:
+            Question.query.filter_by(quiz_id=quiz.id).delete()
 
-# ✅ Edit Chapter Route
+        # Delete all quizzes
+        Quiz.query.filter_by(chapter_id=chapter.id).delete()
+
+        # Finally, delete the chapter
+        db.session.delete(chapter)
+        db.session.commit()
+        
+        flash('Chapter and all related quizzes and questions deleted successfully!', 'success')
+    else:
+        flash('Chapter not found!', 'danger')
+
+    return redirect(url_for('manage_chapters'))
+
+
+
+# Edit Chapter Route
 @app.route('/admin/chapters/edit/<int:id>', methods=['POST'])
 def edit_chapter(id):
     if 'user_id' not in session or not is_admin(session['user_id']):
@@ -391,17 +414,6 @@ def edit_chapter(id):
     return redirect(url_for('manage_chapters'))
 
 
-# ✅ Delete Chapter Route
-@app.route('/admin/chapters/delete/<int:id>', methods=['POST'])
-def delete_chapter(id):
-    chapter = Chapter.query.get_or_404(id)
-    db.session.delete(chapter)
-    db.session.commit()
-    flash("Chapter deleted successfully!", "success")
-    return redirect(url_for('manage_chapters'))
-
-
-
 @app.route('/admin/quizzes', methods=['GET', 'POST'])
 def manage_quizzes():
     if 'user_id' not in session or not is_admin(session['user_id']):
@@ -414,7 +426,7 @@ def manage_quizzes():
     if search_query:
         quizzes = Quiz.query.join(Chapter).filter(Chapter.name.ilike(f"%{search_query}%")).all()
     else:
-        quizzes = Quiz.query.all()
+        quizzes = Quiz.query.order_by(Quiz.date.desc()).all()  # Ensure correct ordering
 
     if request.method == 'POST':
         chapter_id = request.form.get('chapter_id')
@@ -429,6 +441,7 @@ def manage_quizzes():
             )
             db.session.add(new_quiz)
             db.session.commit()
+
             flash("Quiz added successfully!", "success")
         else:
             flash("Please fill all fields!", "danger")
@@ -442,18 +455,26 @@ def manage_quizzes():
 @app.route('/admin/quizzes/delete/<int:id>', methods=['POST'])
 def delete_quiz(id):
     quiz = Quiz.query.get_or_404(id)
+
+    # Delete all associated questions first
+    Question.query.filter_by(quiz_id=id).delete()
+
+    # Now delete the quiz
     db.session.delete(quiz)
     db.session.commit()
-    flash("Quiz deleted successfully!", "success")
+
+    flash("Quiz and its questions deleted successfully!", "success")
     return redirect(url_for('manage_quizzes'))
+
 
 # View all questions for a quiz
 @app.route('/admin/questions/<int:quiz_id>')
 def manage_questions(quiz_id):
     quiz = Quiz.query.get_or_404(quiz_id)
-    chapter = quiz.chapter  # Assuming the Quiz model has a relationship with Chapter
+    chapter = quiz.chapter  #  Quiz model has a relationship with Chapter
 
-    questions = quiz.questions  # Fetch related questions
+    questions = Question.query.filter_by(quiz_id=quiz.id).all()
+  # Fetching related questions
     return render_template('ad_questions.html', quiz=quiz, questions=questions, chapter=chapter)
 
 
@@ -482,7 +503,7 @@ def add_question(quiz_id):
         flash('Question added successfully!', 'success')
         return redirect(url_for('manage_questions', quiz_id=quiz_id))
 
-    return render_template('add_question.html', quiz_id=quiz_id)  # Use a new template
+    return render_template('add_question.html', quiz_id=quiz_id) 
 
 
 @app.route('/admin/questions/edit/<int:question_id>', methods=['POST'])
@@ -500,7 +521,7 @@ def edit_question(question_id):
     db.session.commit()
     flash('Question updated successfully!', 'success')
 
-    # ✅ Redirect back to manage questions
+    #  Redirect back to manage questions
     return redirect(url_for('manage_questions', quiz_id=question.quiz_id))
 
 # Delete a question
@@ -525,7 +546,7 @@ def admin_summary():
 
     user_data = []
     for user in users:
-        total_attempts = len(user.scores)  # Using 'scores' instead of 'quiz_attempts'
+        total_attempts = len(user.scores)  # Get the total number of attempts
         total_score = sum(attempt.score for attempt in user.scores if attempt.score is not None)
 
         # Calculate average score safely
@@ -546,11 +567,11 @@ def admin_summary():
 
 #User side Routes
 
-#✅ Ensures user is logged in
-# ✅ Checks if the user role is "user"
-# ✅ Fetches all available quizzes
-# ✅ Gets previous quiz attempts of the user
-# ✅ Prepares data for a performance chart (if needed) # Import necessary models
+#Ensures user is logged in
+#Checks if the user role is "user"
+#Fetches all available quizzes
+#Gets previous quiz attempts of the user
+#Prepares data for a performance chart (if needed) 
 
 @app.route('/ud')
 def ud():
@@ -570,7 +591,7 @@ def ud():
     quiz_history = Score.query.filter_by(user_id=user_id).order_by(Score.attempt_date.desc()).limit(5).all()
 
     # Fetch Available Quizzes
-    available_quizzes = Quiz.query.all()  # You may need to filter based on conditions
+    available_quizzes = Quiz.query.all()  
 
     return render_template(
         'us_dash.html',
@@ -578,7 +599,7 @@ def ud():
         total_score=total_score,
         total_attempts=total_attempts,
         quiz_history=quiz_history,
-        available_quizzes=available_quizzes  # Add this to the template
+        available_quizzes=available_quizzes  
     )
 
 
@@ -594,53 +615,83 @@ def score():
     # Fetch quiz attempts of the logged-in user
     quiz_attempts = Score.query.filter_by(user_id=user.id).order_by(Score.attempt_date.desc()).all()
 
-    return render_template('us_scores.html', 
-                           user=user, 
-                           quiz_attempts=quiz_attempts)
+    # Attach quiz details safely
+    quiz_data = []
+    for attempt in quiz_attempts:
+        quiz = Quiz.query.get(attempt.quiz_id)
+        if quiz:  # Ensure quiz exists
+            quiz_data.append({
+                "quiz": quiz,
+                "score": attempt.score,
+                "attempt_date": attempt.attempt_date
+            })
+
+    return render_template('us_scores.html', user=user, quiz_attempts=quiz_data)
+
 @app.route('/user_summary/<int:user_id>')
 def user_summary(user_id):
     user = User.query.get(user_id)
     if not user:
         return "User not found", 404
 
-    total_quizzes = Score.query.filter_by(user_id=user_id).count()
+    # Fetch all quiz scores for the user
     scores = Score.query.filter_by(user_id=user_id).all()
+    
+    total_quizzes = len(scores)  # Total quizzes attempted
+    best_score = max((score.score or 0) for score in scores) if scores else 0
+    lowest_score = min((score.score or 0) for score in scores) if scores else 0
 
-    best_score = max([score.score or 0 for score in scores], default=0)
-    lowest_score = min([score.score or 0 for score in scores], default=0)
-
+    # Store chapter attempts
     chapter_attempts = {}
-    quiz_names = []
-    quiz_scores = []
+    quiz_data = {}  # To store unique quizzes and their highest score
 
     for score in scores:
         if score.quiz and score.quiz.chapter:
-            chapter_name = score.quiz.chapter.name or "Unknown"
-            quiz_names.append(chapter_name)  # Store chapter name instead of quiz name
-        else:
-            chapter_name = "Unknown"
+            chapter_name = score.quiz.chapter.name  # Using chapter name instead of quiz name
+            
+            # Count chapter attempts
+            chapter_attempts[chapter_name] = chapter_attempts.get(chapter_name, 0) + 1
+            
+            # Store only the highest score for each unique quiz
+            if chapter_name not in quiz_data or score.score > quiz_data[chapter_name]:
+                quiz_data[chapter_name] = score.score
 
-        chapter_attempts[chapter_name] = chapter_attempts.get(chapter_name, 0) + 1
-        quiz_scores.append(score.score or 0)
-
+    # Get most attempted chapter
     most_attempted_chapter = max(chapter_attempts, key=chapter_attempts.get, default="None")
 
-    return render_template("us_summary.html", user=user, total_quizzes=total_quizzes, 
-                           best_score=best_score, lowest_score=lowest_score, 
+    # Extract unique quiz names and corresponding highest scores
+    quiz_names = list(quiz_data.keys())
+    quiz_scores = list(quiz_data.values())
+
+    print("Quiz Names:", quiz_names)  # Debugging output
+    print("Quiz Scores:", quiz_scores)  # Debugging output
+
+    return render_template("us_summary.html", 
+                           user=user, 
+                           total_quizzes=total_quizzes, 
+                           best_score=best_score, 
+                           lowest_score=lowest_score, 
                            most_attempted_chapter=most_attempted_chapter, 
-                           quiz_names=quiz_names, quiz_scores=quiz_scores)
+                           quiz_names=quiz_names, 
+                           quiz_scores=quiz_scores)
 
 
 
-
-
-
-    
 @app.route('/quiz/<int:quiz_id>')
 def quiz(quiz_id):
     quiz = Quiz.query.get(quiz_id)
+    if not quiz:
+        return redirect(url_for('ud'))  # Redirect to a relevant page
+
     questions = Question.query.filter_by(quiz_id=quiz_id).all()
-    return render_template('us_quiz.html', quiz=quiz, questions=questions)
+
+    # Assuming the user ID is stored in session after login
+    user_id = session.get('user_id')  
+    user = User.query.get(user_id) if user_id else None  
+
+    return render_template('us_quiz.html', quiz=quiz, questions=questions, user=user)
+
+
 
 @app.route('/quiz/<int:quiz_id>/submit', methods=['POST'])
 def submit_quiz(quiz_id):
@@ -669,10 +720,6 @@ def submit_quiz(quiz_id):
 
     flash(f"Quiz submitted! You scored {int(final_score)}%", "success")
     return redirect(url_for('score'))  
-
-
-    
-
 
 
 if __name__ == '__main__':

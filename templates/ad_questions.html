@@ -1,8 +1,12 @@
 {% extends "base.html" %}
 
-{% block content %}
-{% include "ad_nav.html" %}
+{% block title %} Manage Questions {% endblock %}
 
+{% block navbar %}
+{% include "ad_nav.html" %}
+{% endblock %}
+
+{% block content %}
 <div class="container mt-4">
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h2 class="text-center flex-grow-1">Manage Questions for {{ quiz.chapter.name }}</h2>
